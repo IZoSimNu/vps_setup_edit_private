@@ -127,7 +127,7 @@ systemctl is-active --quiet nginx && systemctl stop nginx || true
 /root/.acme.sh/acme.sh --install-cert -d example.ru \
   --key-file /var/lib/marzban/certs/key.pem \
   --fullchain-file /var/lib/marzban/certs/fullchain.pem \
-  --reloadcmd "marzban restart && systemctl reload nginx"
+  --reloadcmd "marzban restart; if systemctl is-active --quiet nginx; then systemctl reload nginx; fi"
 ```
 
 Команда `marzban restart` используется штатным CLI-скриптом Marzban. Убедитесь, что команда `marzban` доступна в PATH и что Nginx установлен и запущен к моменту продления сертификата.
@@ -152,14 +152,16 @@ nano /opt/marzban/.env
 
 Проверьте/добавьте параметры:
 ```env
-UVICORN_HOST = "0.0.0.0"
+UVICORN_HOST = "127.0.0.1"
 UVICORN_PORT = 8000
 UVICORN_SSL_CERTFILE = "/var/lib/marzban/certs/fullchain.pem"
 UVICORN_SSL_KEYFILE = "/var/lib/marzban/certs/key.pem"
 XRAY_SUBSCRIPTION_URL_PREFIX = "https://example.ru"
 ```
 
-После изменения `.env` перезапустите Marzban способом, соответствующим вашей установке. Для стандартного Docker-контейнера это можно сделать так (имя контейнера проверьте через `docker ps`):
+Параметр `UVICORN_HOST = "127.0.0.1"` принципиален: он ограничивает панель Marzban локальным интерфейсом. Не меняйте его на `0.0.0.0`, иначе порт 8000 станет доступен на внешних интерфейсах VPS (если это не ограничено отдельно firewall).
+
+После изменения `.env` перезапустите Marzban штатной командой:
 ```bash
 marzban restart
 ```
@@ -261,7 +263,9 @@ server {
 
         proxy_ssl_server_name on;
         proxy_ssl_name example.ru;
-        proxy_ssl_verify off;
+        proxy_ssl_verify on;
+        proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+        proxy_ssl_verify_depth 2;
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -271,7 +275,7 @@ server {
 }
 ```
 
-Здесь `proxy_ssl_verify off` отключает проверку сертификата только между локальным Nginx и Marzban. Внешнее HTTPS-соединение клиента по-прежнему использует сертификат, установленный в Nginx.
+Nginx проверяет сертификат Marzban и имя `example.ru` при локальном HTTPS-соединении. Для этого сертификат должен быть выпущен доверенным центром сертификации и содержать домен `example.ru`.
 
 Создадим тестовую страницу:
 ```bash
