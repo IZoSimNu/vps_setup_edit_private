@@ -1,11 +1,10 @@
-<h1 align="center">Настройка VPS с нуля + Marzban + VLESS TCP REALITY + nginx steal_oneself + WireGuard с веб-интерфейсом</h2>
+<h1 align="center">Настройка VPS с нуля + Marzban + VLESS TCP REALITY + nginx steal_oneself</h1>
 
 Для работы схемы откройте необходимые входящие порты. Для HTTP-01 challenge Let's Encrypt через acme.sh в режиме standalone порт 80 должен быть доступен из интернета при выпуске и каждом продлении сертификата. Если не хотите открывать 80, используйте DNS-01 challenge и настройте DNS API-плагин acme.sh.
 ```bash
 22
 80
 8000
-51821
 443
 1443
 8443
