@@ -159,20 +159,6 @@ XRAY_SUBSCRIPTION_URL_PREFIX = "https://example.ru"
 docker restart marzban-marzban-1
 ```
 
-### Переключение marzban на dev
-Как минимум для наличия русского языка и корректной работы телеграм бота
-- Редактируем файл докера
-```bash
-sudo nano /opt/marzban/docker-compose.yml
-```
-- Заменяем marzban:latest на marzban:dev
-- Сохраняем файл CTRL+C ENTER CTRL+X
-- Обновляем Marzban для подтягивания новой версии
-```bash
-marzban update 
-```
-Теперь можно попасть на марзбан по ссылке https://твой_домен.com:8000/dashboard
-![marzban](https://github.com/user-attachments/assets/4a7e3d9b-508f-4576-80ad-7493d3a0ce08)
 ### Поднимаем Nginx для fallback и маскировки
 
 Установим Nginx и Stream-модуль:
@@ -362,16 +348,6 @@ curl -v https://example.ru/
           "tls",
           "quic"
         ]
-      }
-    },
-    {
-      "tag": "Shadowsocks TCP",
-      "listen": "0.0.0.0",
-      "port": 1080,
-      "protocol": "shadowsocks",
-      "settings": {
-        "clients": [],
-        "network": "tcp,udp"
       }
     }
   ],
