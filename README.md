@@ -1,14 +1,15 @@
 <h1 align="center">Настройка VPS с нуля + Marzban + VLESS TCP REALITY + nginx steal_oneself</h1>
 
-Для работы схемы откройте необходимые входящие порты. Для HTTP-01 challenge Let's Encrypt через acme.sh в режиме standalone порт 80 должен быть доступен из интернета при выпуске и каждом продлении сертификата. Если не хотите открывать 80, используйте DNS-01 challenge и настройте DNS API-плагин acme.sh.
-```bash
-22
-80
-8000
-443
-1443
-8443
-```
+## Сетевые порты
+
+Для внешнего доступа к серверу в этой инструкции нужны:
+- TCP 22 — SSH (лучше ограничить доступ своим IP в firewall провайдера).
+- TCP 80 — выпуск и продление сертификата Let's Encrypt через HTTP-01.
+- TCP 443 — HTTPS-вход.
+
+Порты 8000, 1443 и 8443 используются внутренними компонентами схемы. Не добавляйте их в список публично открытых портов. Перед запуском проверьте, что панель Marzban не опубликована Docker на внешнем интерфейсе: это отдельный пункт проверки после установки.
+
+Если используете firewall в панели VPS-провайдера, разрешите только необходимые входящие подключения. Не включайте UFW вслепую на удалённом сервере: сначала разрешите SSH и убедитесь, что доступ не потеряется.
 
 ### Требования:
 - VPS
@@ -47,7 +48,8 @@ sudo sysctl -p
 Утилита для автоматического бана хостов, которые превысили количество попыток входа по SSH (количество устанавливается параметром maxretry)
 - Откроем файл для редактирования
 ```bash
-sudo nano /etc/fail2ban/jail.conf
+sudo mkdir -p /etc/fail2ban/jail.d
+sudo nano /etc/fail2ban/jail.d/sshd.local
 ```
 - Внесем изменения
 ```bash
@@ -62,7 +64,7 @@ bantime = 1d
 logencoding = UTF-8
 filter = sshd
 ```
-- Сохраняем файл CTRL+C ENTER CTRL+X
+- Сохраняем файл: `Ctrl+O`, затем `Enter`; выходим: `Ctrl+X`.
 - Включим автозагрузку, запустим и проверим работу
 ```bash
 sudo systemctl enable fail2ban
@@ -73,9 +75,12 @@ sudo fail2ban-client status sshd
 
 ### Установка docker
 ```bash
-sudo bash <(wget -qO- https://get.docker.com) @ -o get-docker.sh
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+rm -f get-docker.sh
 ```
-Если вы под рутом, то лучше делать без sudo, может не найти директории.
+Скрипт устанавливает стабильный канал Docker, но Docker отмечает этот способ как удобный вариант для быстрого развёртывания, а не предпочтительный метод для production. Для строгой production-установки используйте установку Docker из официального APT-репозитория. Не запускайте установщик повторно без необходимости.
+
 Проверяем:
 ```bash
 docker ps -a
@@ -122,10 +127,10 @@ systemctl is-active --quiet nginx && systemctl stop nginx || true
 /root/.acme.sh/acme.sh --install-cert -d example.ru \
   --key-file /var/lib/marzban/certs/key.pem \
   --fullchain-file /var/lib/marzban/certs/fullchain.pem \
-  --reloadcmd "docker restart marzban-marzban-1; systemctl reload nginx"
+  --reloadcmd "marzban restart && systemctl reload nginx"
 ```
 
-**Важно:** имя контейнера в команде выше приведено как пример. Узнайте фактическое имя командой `docker ps` и замените его в `--reloadcmd`. Если Marzban установлен не в Docker-контейнере с таким именем, укажите подходящую команду перезапуска именно вашей установки.
+Команда `marzban restart` используется штатным CLI-скриптом Marzban. Убедитесь, что команда `marzban` доступна в PATH и что Nginx установлен и запущен к моменту продления сертификата.
 
 Проверим сертификат и его установку:
 ```bash
@@ -156,7 +161,7 @@ XRAY_SUBSCRIPTION_URL_PREFIX = "https://example.ru"
 
 После изменения `.env` перезапустите Marzban способом, соответствующим вашей установке. Для стандартного Docker-контейнера это можно сделать так (имя контейнера проверьте через `docker ps`):
 ```bash
-docker restart marzban-marzban-1
+marzban restart
 ```
 
 ### Поднимаем Nginx для fallback и маскировки
@@ -391,8 +396,8 @@ sudo nano /opt/marzban/.env
 ```
 - Раскомментируем TELEGRAM_API_TOKEN и TELEGRAM_ADMIN_ID
 - Копируем API из сообщения о создании бота и свой айди
-- Сохраняем файл CTRL+C ENTER CTRL+X
-- Перезапускаем Marzban (имя контейнера проверьте командой `docker ps`; оно может отличаться)
+- Сохраняем файл: `Ctrl+O`, затем `Enter`; выходим: `Ctrl+X`.
+- Перезапускаем Marzban штатной командой CLI
 ```bash
 docker restart marzban-marzban-1
 ```
