@@ -44,34 +44,7 @@ echo "net.core.default_qdisc=fq" | sudo tee -a /etc/sysctl.conf
 echo "net.ipv4.tcp_congestion_control=bbr" | sudo tee -a /etc/sysctl.conf
 sudo sysctl -p
 ```
-### Настройка fail2ban
-Утилита для автоматического бана хостов, которые превысили количество попыток входа по SSH (количество устанавливается параметром maxretry)
-- Откроем файл для редактирования
-```bash
-sudo mkdir -p /etc/fail2ban/jail.d
-sudo nano /etc/fail2ban/jail.d/sshd.local
-```
-- Внесем изменения
-```bash
-[sshd]
-#mode   = normal
-port    = ssh
-logpath = %(sshd_log)s
-backend = %(sshd_backend)s
-enabled = true
-maxretry = 4
-bantime = 1d
-logencoding = UTF-8
-filter = sshd
-```
-- Сохраняем файл: `Ctrl+O`, затем `Enter`; выходим: `Ctrl+X`.
-- Включим автозагрузку, запустим и проверим работу
-```bash
-sudo systemctl enable fail2ban
-sudo systemctl start fail2ban
-sudo fail2ban-client status sshd
-```
-![fail2ban](https://github.com/user-attachments/assets/57899ed3-4f7c-4256-9fb2-4eeec5a1b10d)
+
 
 ### Установка docker
 ```bash
